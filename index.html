@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Office Agent — Rural WCM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #C00000; --red-bright: #D02126; --navy: #002060;
+  --dark: #1F2433; --gray: #8A909C; --light: #FFF8F8;
+  --white: #FFFFFF; --border: #F0D0D0; --bg: #F8F9FC;
+  --green: #1B8A42; --amber: #FFA000;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  background: var(--bg); color: var(--dark); height: 100vh; display: flex; flex-direction: column;
+}
+/* HEADER */
+.header {
+  background: var(--navy); color: var(--white); padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 3px solid var(--red);
+}
+.header .logo { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.header .logo span { color: var(--red-bright); }
+.header .user { font-size: 13px; color: #B9C6DE; display: flex; align-items: center; gap: 8px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+
+/* SIDEBAR + MAIN */
+.layout { display: flex; flex: 1; overflow: hidden; }
+.sidebar {
+  width: 260px; background: var(--white); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sidebar .agents { padding: 12px; }
+.sidebar .agents h3 { font-size: 11px; text-transform: uppercase; color: var(--gray); margin: 10px 0 6px 0; letter-spacing: 0.5px; }
+.agent-card {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin: 2px 0;
+  border-radius: 8px; cursor: pointer; transition: 0.15s; font-size: 13px;
+}
+.agent-card:hover { background: var(--light); }
+.agent-card.active { background: #FDECEC; font-weight: 600; }
+.agent-card .emoji { font-size: 18px; width: 24px; text-align: center; }
+.agent-card .name { flex: 1; }
+.agent-card .badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.badge-online { background: #E8F5E9; color: var(--green); }
+.badge-standby { background: #FFF3E0; color: var(--amber); }
+
+.sidebar .history { flex: 1; overflow-y: auto; padding: 0 12px; }
+.sidebar .history h3 { font-size: 11px; text-transform: uppercase; color: var(--gray); margin: 8px 0 6px 0; letter-spacing: 0.5px; }
+.hist-item { font-size: 12px; padding: 6px 8px; border-radius: 6px; cursor: pointer; margin: 2px 0; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item:hover { background: var(--light); }
+
+/* CHAT AREA */
+.chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
+.chat-header { padding: 10px 20px; background: var(--white); border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.chat-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 85%; word-wrap: break-word; }
+.msg.user { align-self: flex-end; }
+.msg.agent { align-self: flex-start; }
+.msg .bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+.msg.user .bubble { background: var(--navy); color: var(--white); border-bottom-right-radius: 4px; }
+.msg.agent .bubble { background: var(--white); border: 1px solid var(--border); border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.msg .sender { font-size: 11px; font-weight: 600; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+.msg .time { font-size: 10px; color: var(--gray); margin-top: 3px; text-align: right; }
+
+.chat-input-area { padding: 12px 20px; background: var(--white); border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+.chat-input-area input {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 20px;
+  font-size: 13px; font-family: inherit; outline: none;
+}
+.chat-input-area input:focus { border-color: var(--navy); }
+.btn-send {
+  width: 40px; height: 40px; border-radius: 50%; border: none;
+  background: var(--red); color: white; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: 0.15s;
+}
+.btn-send:hover { background: var(--red-bright); }
+.btn-upload {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--white); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Welcome */
+.welcome { text-align: center; padding: 40px 20px; color: var(--gray); }
+.welcome h2 { color: var(--dark); font-size: 20px; margin-bottom: 8px; }
+.welcome .quick-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.quick-btn {
+  padding: 8px 16px; border: 1px solid var(--border); border-radius: 16px;
+  background: var(--white); cursor: pointer; font-size: 12px; font-family: inherit;
+  transition: 0.15s;
+}
+.quick-btn:hover { border-color: var(--navy); background: var(--light); }
+
+/* Loading dots */
+.loading { display: flex; gap: 4px; padding: 8px 0; }
+.loading span { width: 6px; height: 6px; border-radius: 50%; background: var(--gray); animation: bounce 1.4s infinite both; }
+.loading span:nth-child(2) { animation-delay: 0.2s; }
+.loading span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+/* File card */
+.file-card {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--light); border-radius: 8px; font-size: 12px; margin-top: 6px;
+}
+.file-card .icon { font-size: 20px; }
+.file-card .name { flex: 1; font-weight: 500; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🏢 <span>AI OFFICE</span> AGENT</div>
+  <div class="user" id="userInfo">🟢 Đang kết nối...</div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="agents">
+      <h3>🤖 AI AGENTS</h3>
+      <div class="agent-card active" data-agent="mst">
+        <div class="emoji">✨</div>
+        <div class="name">MsT</div>
+        <div class="badge badge-online">Online</div>
+      </div>
+      <div class="agent-card" data-agent="claude">
+        <div class="emoji">🧠</div>
+        <div class="name">Claude</div>
+        <div class="badge badge-online">Online</div>
+      </div>
+      <div class="agent-card" data-agent="excel">
+        <div class="emoji">📊</div>
+        <div class="name">Excel Agent</div>
+        <div class="badge badge-standby">Standby</div>
+      </div>
+      <div class="agent-card" data-agent="slide">
+        <div class="emoji">🎨</div>
+        <div class="name">Slide Agent</div>
+        <div class="badge badge-standby">Standby</div>
+      </div>
+      <div class="agent-card" data-agent="web">
+        <div class="emoji">🌐</div>
+        <div class="name">Web Agent</div>
+        <div class="badge badge-standby">Standby</div>
+      </div>
+    </div>
+    <div class="history">
+      <h3>📋 LỊCH SỬ</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="chat-header" id="chatHeader">
+      <div class="dot"></div> <span>MsT ✨</span> — Trợ lý AI chính
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg agent">
+        <div style="text-align:center;width:100%" class="welcome">
+          <h2>👋 Chào anh Hảo!</h2>
+          <p style="color:var(--gray);margin-bottom:4px">Em là AI Office Agent — team AI hỗ trợ công việc của anh.</p>
+          <p style="color:var(--gray);font-size:12px">Em có thể: làm báo cáo, slide, Excel, phân tích data, tracking task, tìm kiếm thông tin...</p>
+          <div class="quick-actions" id="quickActions">
+            <button class="quick-btn" onclick="sendQuick('📊 Làm báo cáo doanh thu hôm nay')">📊 Báo cáo doanh thu</button>
+            <button class="quick-btn" onclick="sendQuick('📋 Task nào sắp đến deadline?')">📋 Task deadline</button>
+            <button class="quick-btn" onclick="sendQuick('🎨 Tạo slide profile CBN')">🎨 Tạo slide</button>
+            <button class="quick-btn" onclick="sendQuick('🔍 Phân tích đối thủ gần đây')">🔍 Phân tích đối thủ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Đính kèm file">📎</button>
+      <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)" multiple>
+      <input type="text" id="chatInput" placeholder="Nhập yêu cầu hoặc câu hỏi..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="btn-send" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PORTAL AUTH ──
+const portalUser = JSON.parse(localStorage.getItem('portal_user') || 'null');
+if (portalUser) {
+  document.getElementById('userInfo').innerHTML = `👤 ${portalUser.name || portalUser.email || 'User'}`;
+} else {
+  document.getElementById('userInfo').innerHTML = `🔒 <a href="https://ruralwcm.github.io/portal/" style="color:#B9C6DE">Đăng nhập qua Portal</a>`;
+}
+
+// ── AGENT SWITCHING ──
+let activeAgent = 'mst';
+document.querySelectorAll('.agent-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    activeAgent = card.dataset.agent;
+    const names = {mst:'MsT ✨ — Trợ lý AI chính',claude:'Claude 🧠 — AI Coder & Analyst',excel:'Excel Agent 📊 — Chuyên gia Excel',slide:'Slide Agent 🎨 — Chuyên gia PPT',web:'Web Agent 🌐 — Web Researcher'};
+    document.getElementById('chatHeader').innerHTML = `<div class="dot"></div> <span>${names[activeAgent]}</span>`;
+  });
+});
+
+// ── CHAT ──
+function sendQuick(text) { document.getElementById('chatInput').value = text; sendMessage(); }
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  addMessage('user', text, 'Anh Hảo');
+  input.value = '';
+
+  // loading
+  const msgs = document.getElementById('chatMessages');
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'msg agent';
+  loadDiv.innerHTML = '<div class="bubble"><div class="loading"><span></span><span></span><span></span></div></div>';
+  loadDiv.id = 'loadingMsg';
+  msgs.appendChild(loadDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Route to backend
+  routeToAgent(text).then(response => {
+    document.getElementById('loadingMsg')?.remove();
+    addMessage('agent', response, getAgentLabel(activeAgent));
+    saveHistory(text, response);
+  }).catch(err => {
+    document.getElementById('loadingMsg')?.remove();
+    addMessage('agent', '⚠️ ' + (err.message || 'Có lỗi xảy ra, anh thử lại nhé!'), getAgentLabel(activeAgent));
+  });
+}
+
+function addMessage(role, text, sender) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const now = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `
+    ${role === 'agent' ? `<div class="sender">🤖 ${sender}</div>` : ''}
+    <div class="bubble">${formatMsg(text)}</div>
+    <div class="time">${now}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function formatMsg(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>')
+    .replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 5px;border-radius:3px;font-family:JetBrains Mono">$1</code>');
+}
+
+function getAgentLabel(agent) {
+  const labels = {mst:'MsT ✨',claude:'Claude 🧠',excel:'Excel Agent 📊',slide:'Slide Agent 🎨',web:'Web Agent 🌐'};
+  return labels[agent] || 'Office Agent';
+}
+
+// ── HISTORY ──
+function saveHistory(prompt, response) {
+  let hist = JSON.parse(localStorage.getItem('office_history') || '[]');
+  hist.unshift({prompt: prompt.substring(0,60), response: response.substring(0,60), time: Date.now(), agent: activeAgent});
+  if (hist.length > 50) hist = hist.slice(0, 50);
+  localStorage.setItem('office_history', JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory() {
+  const hist = JSON.parse(localStorage.getItem('office_history') || '[]');
+  const el = document.getElementById('historyList');
+  el.innerHTML = hist.slice(0, 15).map((h,i) => `
+    <div class="hist-item" onclick="loadHistory(${i})" title="${h.prompt}">
+      ${new Date(h.time).toLocaleDateString('vi-VN')} · ${h.prompt}
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const hist = JSON.parse(localStorage.getItem('office_history') || '[]');
+  if (hist[i]) {
+    document.getElementById('chatInput').value = hist[i].prompt;
+    sendMessage();
+  }
+}
+
+// ── FILE UPLOAD ──
+function handleFileUpload(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+  const names = Array.from(files).map(f => f.name).join(', ');
+  addMessage('user', `📎 Đã gửi: ${names} (${files.length} file)`, 'Anh Hảo');
+  addMessage('agent', '✅ Em đã nhận file. Hiện tại tính năng xử lý file đang được phát triển — anh mô tả thêm em sẽ hỗ trợ ạ!', getAgentLabel(activeAgent));
+  event.target.value = '';
+}
+
+// ── BACKEND ROUTING ──
+async function routeToAgent(prompt) {
+  // Use MsT's Telegram bot API via OpenClaw
+  // For now: simple keyword-based agent routing + simulated responses
+  const p = prompt.toLowerCase();
+
+  // Auto-route to appropriate agent based on keywords
+  if (activeAgent === 'mst' || !activeAgent) {
+    // MsT handles most tasks, routes internally
+    // Simulate MsT response - in production this calls the real backend
+    return simulateMsT(prompt);
+  } else if (activeAgent === 'claude') {
+    return simulateClaude(prompt);
+  } else if (activeAgent === 'excel') {
+    return '📊 **Excel Agent:** Tính năng đang được phát triển. Hiện tại em có thể hỗ trợ anh qua MsT — anh gửi file Excel em sẽ đọc và xử lý giúp ạ!';
+  } else if (activeAgent === 'slide') {
+    return '🎨 **Slide Agent:** Tính năng đang được phát triển. Anh có thể yêu cầu MsT tạo slide — em vừa làm xong deck Trần Văn Hậu WCM style đó ạ!';
+  } else if (activeAgent === 'web') {
+    return '🌐 **Web Agent:** Tính năng đang được phát triển. MsT có thể tìm kiếm thông tin thị trường giúp anh — anh thử hỏi em nhé!';
+  }
+  return 'Em chưa hiểu yêu cầu, anh nói rõ thêm giúp em ạ!';
+}
+
+function simulateMsT(prompt) {
+  const p = prompt.toLowerCase();
+  if (p.includes('báo cáo') && (p.includes('doanh thu') || p.includes('sale'))) {
+    return '📊 Dạ, em sẽ làm **báo cáo doanh thu** cho anh.\n\nĐể làm chính xác, anh cho em biết:\n• **Phạm vi:** Toàn Miền Bắc hay Vùng cụ thể?\n• **Thời gian:** Hôm nay, tuần này, hay tháng này?\n• **Định dạng:** PNG (dashboard) hay Excel chi tiết?\n\nHoặc anh nói "làm BC_Sale1" là em tự chạy luôn ạ!';
+  }
+  if (p.includes('task') || p.includes('deadline')) {
+    return '📋 Dạ, để em check **Task Tracker** cho anh.\n\nEm đang kéo dữ liệu từ Sheet Task Tracker...\n\n⚠️ Hiện chưa có dữ liệu realtime trong bản MVP này — tính năng sẽ sớm được kết nối với Google Sheets. Anh thông cảm bản demo đầu tiên nhé!';
+  }
+  if (p.includes('slide') || p.includes('ppt') || p.includes('profile')) {
+    return '🎨 Dạ, em có thể **tạo slide WCM style** cho anh.\n\nGửi em:\n• File data (Excel/Word) hoặc nội dung\n• Style: WCM (đỏ-navy) hay tùy chỉnh\n• Số slide mong muốn\n\nEm vừa làm xong deck Trần Văn Hậu 9 slide đó anh!';
+  }
+  if (p.includes('đối thủ')) {
+    return '🔍 Dạ, em sẽ **phân tích đối thủ**.\n\nEm đọc dữ liệu từ Dashboard Đối thủ (Rà soát đối thủ) và Competitor Analysis.\n\nAnh muốn:\n• Tổng quan toàn Miền Bắc?\n• Chi tiết theo Vùng/Tỉnh?\n• So sánh LFL với baseline?\n\nChọn 1 trong 3 em làm liền!';
+  }
+  if (p.includes('chào') || p.includes('hello') || p.includes('hi')) {
+    return '👋 Chào anh Hảo! Em là MsT ✨ — trợ lý AI của anh.\n\nEm đang chạy trên **AI Office Agent** (bản MVP). Em có thể giúp anh:\n• 📊 Báo cáo doanh thu / S&L / DIO\n• 📋 Tracking task & deadline\n• 🎨 Tạo slide WCM style\n• 🔍 Phân tích đối thủ\n• 📁 Xử lý file Excel/PPT\n\nAnh cần gì cứ bảo em nhé!';
+  }
+  return `✅ Em đã nhận yêu cầu: **"${prompt}"**\n\nĐây là bản MVP của AI Office Agent — backend đang được kết nối. Trong thời gian chờ, anh có thể:\n• Chat trực tiếp với MsT qua Telegram (@mst_wcm_bot)\n• Hoặc em sẽ nâng cấp app này trong vài ngày tới!\n\nAnh muốn em ưu tiên tính năng nào trước ạ?`;
+}
+
+function simulateClaude(prompt) {
+  return '🧠 **Claude Code mode** — Hiện tại ACP runtime chưa được cài trên pod của em.\n\nSau khi anh Matt cài plugin `acpx`, em sẽ tự động kết nối Claude Code vào Office Agent này.\n\nLúc đó anh có thể:\n• Gửi file code lớn, yêu cầu debug\n• Build web app, script phức tạp\n• Phân tích data pipeline\n\nAnh muốn em báo anh Matt cài ACP không ạ?';
+}
+
+renderHistory();
+</script>
+</body>
+</html>
